@@ -5,14 +5,18 @@ const StyledRectangle = ({
                            height = '50px',
                            color = 'orange',
                            shadowOpacity = 0.2,
+                           shadowBlur = 4,
+                           shadowDistance = 4,
                            borderRadius = '1px'
                          }) => {
+
+  const boxShadow = `${shadowDistance}px ${shadowDistance}px ${shadowBlur}px rgba(0, 0, 0, ${shadowOpacity})`;
   const rectangleStyle = {
     width: width,
     height: height,
     backgroundColor: color,
     borderRadius: borderRadius,
-    boxShadow: `3px 3px 3px rgba(0, 0, 0, ${shadowOpacity})`,
+    boxShadow,
     // Adding flexbox to easily handle any children content
     display: 'flex',
     alignItems: 'center',
