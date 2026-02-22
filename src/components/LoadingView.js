@@ -1,0 +1,90 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+import { useState, useEffect, useRef } from 'react';
+import StyledRectangle from "./Cube";
+function variableSpeedCubePosition(animationTime) {
+    const timeStart = 2000;
+    const duration = 2000;
+    const shadowFadeDuration = 300;
+    const maxDistance = 10;
+    const maxBlur = 0; // Shadow gets softer as it lifts
+    const maxOpacity = 0.6; // Shadow gets lighter as it lifts
+    let t = 0;
+    let shadowFactor = 0; // 0 to 1 multiplier for all shadow properties
+    // 1. Movement Logic (unchanged)
+    if (animationTime >= timeStart && animationTime < timeStart + duration) {
+        t = (animationTime - timeStart) / duration;
+    }
+    else if (animationTime >= timeStart + duration) {
+        t = 1;
+    }
+    // 2. Shadow Factor Logic (The "Lift" multiplier)
+    const timeEnd = timeStart + duration;
+    if (animationTime >= (timeStart + shadowFadeDuration) - shadowFadeDuration && animationTime < (timeStart + shadowFadeDuration)) {
+        // Lifting up
+        shadowFactor = (animationTime - ((timeStart + shadowFadeDuration) - shadowFadeDuration)) / shadowFadeDuration;
+    }
+    else if (animationTime >= (timeStart + shadowFadeDuration) && animationTime < (timeEnd - shadowFadeDuration)) {
+        // Held at max height during move
+        shadowFactor = 1;
+    }
+    else if (animationTime >= (timeEnd - shadowFadeDuration) && animationTime < (timeEnd - shadowFadeDuration) + shadowFadeDuration) {
+        // Dropping down
+        shadowFactor = 1 - ((animationTime - (timeEnd - shadowFadeDuration)) / shadowFadeDuration);
+    }
+    // Calculate final values using the float-friendly shadowFactor
+    const currentDistance = shadowFactor * maxDistance;
+    const currentBlur = shadowFactor * maxBlur;
+    const currentOpacity = shadowFactor * maxOpacity;
+    const interpolation = (1 - Math.cos(Math.PI * t)) / 2;
+    return {
+        left: (interpolation * 250) + 10,
+        top: 50 + 10 - currentDistance,
+        shadowDistance: currentDistance,
+        shadowBlur: currentBlur,
+        shadowOpacity: currentOpacity
+    };
+}
+const LoadingView = ({ width = '100%', height = '100%', color = 'white', }) => {
+    const [animationTime, setAnimationTime] = useState(0);
+    // Use a ref to track the animation frame ID so we can clean it up
+    // Initialize with null to satisfy the TypeScript compiler
+    const requestRef = useRef(null);
+    // Inside the animate function, check if it exists before canceling
+    const animate = (time) => {
+        setAnimationTime(time);
+        requestRef.current = requestAnimationFrame(animate);
+    };
+    useEffect(() => {
+        requestRef.current = requestAnimationFrame(animate);
+        return () => {
+            // Standard cleanup pattern
+            if (requestRef.current !== null) {
+                cancelAnimationFrame(requestRef.current);
+            }
+        };
+    }, []);
+    const loadingViewStyle = {
+        width: width,
+        height: height,
+        backgroundColor: color,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    };
+    const firstCube = variableSpeedCubePosition(animationTime);
+    return (_jsx("div", { style: loadingViewStyle, children: _jsx("div", { style: {
+                position: "relative",
+                width: "400px",
+                margin: "200px 200px",
+                height: "200px",
+                borderRadius: '8px',
+                border: "1px solid gray",
+                overflow: "hidden" // Keeps the cube inside the bounds
+            }, children: _jsx("div", { style: {
+                    position: "absolute",
+                    left: `${firstCube.left}px`,
+                    top: `${firstCube.top}px`,
+                    transition: 'none' // Ensure React doesn't try to interpolate
+                }, children: _jsx(StyledRectangle, { shadowDistance: firstCube.shadowDistance }) }) }) }));
+};
+export default LoadingView;
