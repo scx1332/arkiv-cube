@@ -6,12 +6,37 @@ interface CubeSettings {
   top: number;
 }
 
+function variableSpeedCubePosition(animationTime: number): CubeSettings {
+
+  const timeStart = 2000;
+  const duration = 3000;
+  const maxDistance = 250;
+
+
+  // Normalize time within the 20,000ms loop (results in a value from 0 to 1)
+  let t;
+  if (animationTime < timeStart) {
+    t = 0;
+  } else if (animationTime >= timeStart + duration) {
+    t = 1;
+  } else {
+    t = (animationTime - timeStart) / duration;
+  }
+
+  // S-curve interpolation using Cosine
+  const interpolation = (1 - Math.cos(Math.PI * t)) / 2;
+
+  const left = interpolation * maxDistance;
+  const top = 50;
+
+  return { left, top };
+}
 const LoadingView = ({
                        width = '100%',
                        height = '100%',
                        color = 'white',
                      }) => {
-  const [firstCube, setFirstCube] = useState<CubeSettings>({ left: 0, top: 0 });
+  const [animationTime, setAnimationTime] = useState<number>(0);
 
   // Use a ref to track the animation frame ID so we can clean it up
 // Initialize with null to satisfy the TypeScript compiler
@@ -19,11 +44,7 @@ const LoadingView = ({
 
 // Inside the animate function, check if it exists before canceling
   const animate = (time: number) => {
-    setFirstCube((prev) => {
-      const newLeft = prev.left > 280 ? 0 : prev.left + 2;
-      return { ...prev, left: newLeft };
-    });
-
+    setAnimationTime(time);
     requestRef.current = requestAnimationFrame(animate);
   };
 
@@ -45,6 +66,9 @@ const LoadingView = ({
     justifyContent: 'center',
     alignItems: 'center',
   };
+
+
+  const firstCube = variableSpeedCubePosition(animationTime);
 
   return (
     <div style={loadingViewStyle}>
