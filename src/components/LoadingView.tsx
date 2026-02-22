@@ -30,15 +30,11 @@ function variableSpeedCubePosition(animationTime: number): CubeSettings {
   // 2. Shadow Factor Logic (The "Lift" multiplier)
   const timeEnd = timeStart + duration;
 
-  if (animationTime >= (timeStart + shadowFadeDuration) - shadowFadeDuration && animationTime < (timeStart + shadowFadeDuration)) {
-    // Lifting up
-    shadowFactor = (animationTime - ((timeStart + shadowFadeDuration)  - shadowFadeDuration)) / shadowFadeDuration;
-  } else if (animationTime >= (timeStart + shadowFadeDuration) && animationTime < (timeEnd - shadowFadeDuration)) {
-    // Held at max height during move
-    shadowFactor = 1;
-  } else if (animationTime >= (timeEnd - shadowFadeDuration) && animationTime < (timeEnd - shadowFadeDuration) + shadowFadeDuration) {
-    // Dropping down
-    shadowFactor = 1 - ((animationTime - (timeEnd - shadowFadeDuration)) / shadowFadeDuration);
+  if (animationTime >= timeStart && animationTime < timeEnd) {
+    const elapsed = animationTime - timeStart;
+    const remaining = timeEnd - animationTime;
+    const distFromEdge = Math.min(elapsed, remaining);
+    shadowFactor = Math.min(distFromEdge / shadowFadeDuration, 1);
   }
 
   // Calculate final values using the float-friendly shadowFactor
