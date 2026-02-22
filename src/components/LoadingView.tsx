@@ -97,7 +97,7 @@ const LoadingView = ({
       <div style={{
         position: "relative",
         width: "400px",
-        margin: "200px 200px",
+        margin: "200px 0px",
         height: "200px",
         borderRadius: '8px',
         border: "1px solid gray",
