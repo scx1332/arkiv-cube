@@ -1,4 +1,4 @@
-import { jsx as _jsx } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect, useRef } from 'react';
 import StyledRectangle from "./Cube";
 function variableSpeedCubePosition(animationTime) {
@@ -19,17 +19,11 @@ function variableSpeedCubePosition(animationTime) {
     }
     // 2. Shadow Factor Logic (The "Lift" multiplier)
     const timeEnd = timeStart + duration;
-    if (animationTime >= (timeStart + shadowFadeDuration) - shadowFadeDuration && animationTime < (timeStart + shadowFadeDuration)) {
-        // Lifting up
-        shadowFactor = (animationTime - ((timeStart + shadowFadeDuration) - shadowFadeDuration)) / shadowFadeDuration;
-    }
-    else if (animationTime >= (timeStart + shadowFadeDuration) && animationTime < (timeEnd - shadowFadeDuration)) {
-        // Held at max height during move
-        shadowFactor = 1;
-    }
-    else if (animationTime >= (timeEnd - shadowFadeDuration) && animationTime < (timeEnd - shadowFadeDuration) + shadowFadeDuration) {
-        // Dropping down
-        shadowFactor = 1 - ((animationTime - (timeEnd - shadowFadeDuration)) / shadowFadeDuration);
+    if (animationTime >= timeStart && animationTime < timeEnd) {
+        const elapsed = animationTime - timeStart;
+        const remaining = timeEnd - animationTime;
+        const distFromEdge = Math.min(elapsed, remaining);
+        shadowFactor = Math.min(distFromEdge / shadowFadeDuration, 1);
     }
     // Calculate final values using the float-friendly shadowFactor
     const currentDistance = shadowFactor * maxDistance;
@@ -47,17 +41,23 @@ function variableSpeedCubePosition(animationTime) {
 const LoadingView = ({ width = '100%', height = '100%', color = 'white', }) => {
     const [animationTime, setAnimationTime] = useState(0);
     // Use a ref to track the animation frame ID so we can clean it up
-    // Initialize with null to satisfy the TypeScript compiler
     const requestRef = useRef(null);
-    // Inside the animate function, check if it exists before canceling
+    // Track the start time so we can reset it on restart
+    const startTimeRef = useRef(null);
     const animate = (time) => {
-        setAnimationTime(time);
+        if (startTimeRef.current === null) {
+            startTimeRef.current = time;
+        }
+        setAnimationTime(time - startTimeRef.current);
         requestRef.current = requestAnimationFrame(animate);
+    };
+    const restart = () => {
+        startTimeRef.current = null;
+        setAnimationTime(0);
     };
     useEffect(() => {
         requestRef.current = requestAnimationFrame(animate);
         return () => {
-            // Standard cleanup pattern
             if (requestRef.current !== null) {
                 cancelAnimationFrame(requestRef.current);
             }
@@ -72,19 +72,46 @@ const LoadingView = ({ width = '100%', height = '100%', color = 'white', }) => {
         alignItems: 'center',
     };
     const firstCube = variableSpeedCubePosition(animationTime);
-    return (_jsx("div", { style: loadingViewStyle, children: _jsx("div", { style: {
-                position: "relative",
-                width: "400px",
-                margin: "200px 200px",
-                height: "200px",
-                borderRadius: '8px',
-                border: "1px solid gray",
-                overflow: "hidden" // Keeps the cube inside the bounds
-            }, children: _jsx("div", { style: {
-                    position: "absolute",
-                    left: `${firstCube.left}px`,
-                    top: `${firstCube.top}px`,
-                    transition: 'none' // Ensure React doesn't try to interpolate
-                }, children: _jsx(StyledRectangle, { shadowDistance: firstCube.shadowDistance }) }) }) }));
+    return (_jsx("div", { children: _jsxs("div", { style: loadingViewStyle, children: [_jsxs("div", { style: {
+                        position: "relative",
+                        width: "400px",
+                        margin: "200px 0px",
+                        height: "200px",
+                        borderRadius: '8px',
+                        border: "1px solid gray",
+                        overflow: "hidden" // Keeps the cube inside the bounds
+                    }, children: [_jsx("div", { style: {
+                                position: "absolute",
+                                left: `${firstCube.left}px`,
+                                top: `${firstCube.top}px`,
+                                transition: 'none', // Ensure React doesn't try to interpolate
+                                zIndex: 1 // Ensure the moving cube is above the static one
+                            }, children: _jsx(StyledRectangle, { shadowDistance: firstCube.shadowDistance }) }), _jsx("div", { style: {
+                                position: "absolute",
+                                left: `200px`,
+                                top: `20px`,
+                                transition: 'none' // Ensure React doesn't try to interpolate
+                            }, children: _jsx(StyledRectangle, { shadowDistance: 1 }) })] }), _jsx("button", { onClick: () => restart(), style: {
+                        padding: '10px 28px',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        color: '#fff',
+                        backgroundColor: '#4a90d9',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        transition: 'background-color 0.2s, box-shadow 0.2s, transform 0.1s',
+                    }, onMouseEnter: e => {
+                        e.currentTarget.style.backgroundColor = '#357abd';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                    }, onMouseLeave: e => {
+                        e.currentTarget.style.backgroundColor = '#4a90d9';
+                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                    }, onMouseDown: e => {
+                        e.currentTarget.style.transform = 'scale(0.96)';
+                    }, onMouseUp: e => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                    }, children: "Restart" })] }) }));
 };
 export default LoadingView;
